@@ -3,6 +3,7 @@ process.env.NODE_ENV = 'test'
 
 const chai = require('chai')
 const chaiHttp = require('chai-http')
+const expect = chai.expect
 const { baseApiRoute } = require('../config')
 const should = chai.should()
 chai.use(chaiHttp)
@@ -13,7 +14,7 @@ const LONG_USER = '01234567899876543210123456'
 
 describe('Authentication', () => {
   describe('POST /login', () => {
-    it('should set username cookie', (done) => {
+    it('should set cookies', (done) => {
       chai.request(server)
         .post(`${baseApiRoute}/login`)
         .send({
@@ -23,7 +24,7 @@ describe('Authentication', () => {
           should.not.exist(err)
           res.status.should.eql(200)
 
-          res.headers['set-cookie'][0].should.eql(`username=${TEST_USER}; path=/; httponly`)
+          expect(res).to.have.cookie('chat:session')
           done()
         })
     })
@@ -36,7 +37,7 @@ describe('Authentication', () => {
         })
         .end((err, res) => {
           should.not.exist(err)
-          should.not.exist(res.headers['set-cookie'])
+          expect(res).to.not.have.cookie('chat:session')
           done()
         })
     })
@@ -64,7 +65,7 @@ describe('Authentication', () => {
         })
         .end((err, res) => {
           should.not.exist(err)
-          should.not.exist(res.headers['set-cookie'])
+          expect(res).to.not.have.cookie('chat:session')
           done()
         })
     })
@@ -92,7 +93,7 @@ describe('Authentication', () => {
         })
         .end((err, res) => {
           should.not.exist(err)
-          should.not.exist(res.headers['set-cookie'])
+          expect(res).to.not.have.cookie('chat:session')
 
           done()
         })
@@ -110,6 +111,45 @@ describe('Authentication', () => {
           res.status.should.eql(400)
           res.body.status.should.eql('error')
           res.body.message.should.eql('wrong username length')
+
+          done()
+        })
+    })
+  })
+
+  describe('POST /checkLogin', () => {
+    let agent
+
+    beforeEach(() => {
+      agent = chai.request.agent(server)
+    })
+
+    afterEach(() => {
+      agent.close()
+    })
+
+    it('should return success', (done) => {
+      agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+        .then(postRes => {
+          return agent.get(`${baseApiRoute}/checkLogin`)
+            .then(res => {
+              res.status.should.eql(200)
+              res.body.status.should.eql('success')
+
+              done()
+            })
+        })
+    })
+
+    it('should return 401', (done) => {
+      agent.get(`${baseApiRoute}/checkLogin`)
+        .then(res => {
+          res.status.should.eql(401)
+          res.body.status.should.eql('error')
+          res.body.message.should.eql('not authenticated')
 
           done()
         })
