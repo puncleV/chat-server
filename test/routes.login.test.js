@@ -9,6 +9,8 @@ chai.use(chaiHttp)
 
 const server = require('../src/index')
 const TEST_USER = 'test'
+const LONG_USER = '01234567899876543210123456'
+
 describe('Authentication', () => {
   describe('POST /login', () => {
     it('should set username cookie', (done) => {
@@ -78,6 +80,37 @@ describe('Authentication', () => {
           res.status.should.eql(400)
           res.body.status.should.eql('error')
           res.body.message.should.eql('wrong username')
+          done()
+        })
+    })
+
+    it('should not login with too long username', (done) => {
+      chai.request(server)
+        .post(`${baseApiRoute}/login`)
+        .send({
+          username: LONG_USER
+        })
+        .end((err, res) => {
+          should.not.exist(err)
+          should.not.exist(res.headers['set-cookie'])
+
+          done()
+        })
+    })
+
+    it('should set error status with too long username', (done) => {
+      chai.request(server)
+        .post(`${baseApiRoute}/login`)
+        .send({
+          username: LONG_USER
+        })
+        .end((err, res) => {
+          should.not.exist(err)
+
+          res.status.should.eql(400)
+          res.body.status.should.eql('error')
+          res.body.message.should.eql('wrong username length')
+
           done()
         })
     })
