@@ -1,9 +1,11 @@
 const Router = require('koa-router')
 const router = new Router()
 
-router.get('/api/', async ctx => {
+  ctx.cookies.set('username', username)
+
   ctx.body = {
-    message: 'hi'
+    status: 'success',
+    message: 'successful login'
   }
 })
 
