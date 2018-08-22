@@ -5,7 +5,7 @@ const { baseApiRoute } = require('../../config')
 const { usernameMaxLength } = require('../../config')
 
 const router = new Router()
-const baseRoute = new Router()
+const baseRouter = new Router()
 
 router.post(`/login`, async ctx => {
   const username = ctx.request.body.username
@@ -47,6 +47,6 @@ router.get(`/logout`, async ctx => {
   }
 })
 
-baseRoute.use(baseApiRoute, router.routes(), router.allowedMethods())
+baseRouter.use(baseApiRoute, router.routes(), router.allowedMethods())
 
-module.exports = baseRoute
+module.exports = baseRouter
