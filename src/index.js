@@ -12,6 +12,7 @@ const app = new Koa()
 
 app.keys = appSecrets
 
+require('./db/db-connector')(app)
 app.use(logger)
 app.use(session(sessionConfig, app))
 app.use(BodyParser())

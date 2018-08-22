@@ -13,5 +13,9 @@ module.exports = {
     rolling: false,
     renew: false
   },
-  usernameMaxLength: 25
+  usernameMaxLength: 25,
+  mongo: {
+    url: 'mongodb://localhost:27017',
+    db: 'chat'
+  }
 }
