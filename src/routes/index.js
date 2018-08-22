@@ -1,12 +1,13 @@
 const Router = require('koa-router')
 
-const { baseApiRoute } = require('../../config')
 const ResponseHelper = require('../helpers/response-helper')
+const { baseApiRoute } = require('../../config')
 const { usernameMaxLength } = require('../../config')
 
 const router = new Router()
+const baseRoute = new Router()
 
-router.post(`${baseApiRoute}/login`, async ctx => {
+router.post(`/login`, async ctx => {
   const username = ctx.request.body.username
 
   ctx.body = {
@@ -28,7 +29,7 @@ router.post(`${baseApiRoute}/login`, async ctx => {
   ctx.session.username = username
 })
 
-router.get(`${baseApiRoute}/checkLogin`, async ctx => {
+router.get(`/checkLogin`, async ctx => {
   if (void 0 !== ctx.session.username) {
     ctx.body = {
       status: 'success'
@@ -38,11 +39,14 @@ router.get(`${baseApiRoute}/checkLogin`, async ctx => {
   }
 })
 
-router.get(`${baseApiRoute}/logout`, async ctx => {
+router.get(`/logout`, async ctx => {
   ctx.session = null
 
   ctx.body = {
     status: 'success'
   }
 })
-module.exports = router
+
+baseRoute.use(baseApiRoute, router.routes(), router.allowedMethods())
+
+module.exports = baseRoute
