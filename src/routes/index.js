@@ -46,13 +46,13 @@ router.get(`/checkLogin`, async ctx => {
       status: 'success'
     }
   } else {
-    return ResponseHelper.error(ctx, 401, 'not authenticated')
+    return ResponseHelper.error(ctx, 401, 'unauthorized')
   }
 })
 
 router.get(`/logout`, async ctx => {
   if (typeof ctx.session.username !== 'string') {
-    return ResponseHelper.error(ctx, 401, 'not authenticated')
+    return ResponseHelper.error(ctx, 401, 'unauthorized')
   }
 
   try {

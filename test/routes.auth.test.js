@@ -172,6 +172,26 @@ describe('Authentication', () => {
 
       clearCollection(usersColllection)
     })
+
+    it('should user\'s online status after login', async () => {
+      await usersColllection.insertOne({
+        username: TEST_USER,
+        online: false
+      })
+
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+
+      const user = await usersColllection.findOne({
+        username: TEST_USER
+      })
+
+      user.online.should.eql(true)
+
+      clearCollection(usersColllection)
+    })
   })
 
   describe('POST /checkLogin', () => {
@@ -210,7 +230,63 @@ describe('Authentication', () => {
 
       res.status.should.eql(401)
       res.body.status.should.eql('error')
-      res.body.message.should.eql('not authenticated')
+      res.body.message.should.eql('unauthorized')
+    })
+  })
+
+  describe('POST /logout', () => {
+    beforeEach(async () => {
+      const server = new Server({
+        appSecrets,
+        serverConfig,
+        sessionConfig,
+        mongoConfig
+      })
+
+      await server.initialize()
+      agent = chai.request.agent(server.getServer())
+    })
+
+    afterEach(() => {
+      agent.close()
+    })
+
+    it('should logout user', async () => {
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+
+      const res = await agent.get(`${baseApiRoute}/logout`).send()
+
+      res.status.should.eql(200)
+      res.body.status.should.eql('success')
+
+      clearCollection(usersColllection)
+    })
+
+    it('should set user\'s online status to false', async () => {
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+      await agent.get(`${baseApiRoute}/logout`).send()
+
+      const user = await usersColllection.findOne({
+        username: TEST_USER
+      })
+
+      user.online.should.eql(false)
+
+      clearCollection(usersColllection)
+    })
+
+    it('should be unauthorized error while not logged in', async () => {
+      const res = await agent.get(`${baseApiRoute}/logout`).send()
+
+      res.status.should.eql(401)
+      res.body.status.should.eql('error')
+      res.body.message.should.eql('unauthorized')
     })
   })
 })
