@@ -5,7 +5,7 @@ module.exports = {
   baseApiRoute: '/api',
   appSecrets: ['chat.super.secret.no.key'],
   session: {
-    key: 'chat:session',
+    key: 'test:session',
     maxAge: 24 * 60 * 60 * 1000,
     overwrite: true,
     httpOnly: true,
