@@ -6,6 +6,7 @@ const session = require('koa-session')
 const logger = require('./helpers/logger')
 const loggerMiddleware = require('./middleware/logger')(logger)
 const router = require('./routes/index')
+const testing = process.env.NODE_ENV === 'test'
 
 class Server {
   constructor (config = {}) {
@@ -36,7 +37,9 @@ class Server {
     app.use(router.routes())
 
     this.server = app.listen(this.config.server.port, () => {
-      console.log(`Server listening on port: ${this.config.server.port}`)
+      if (!testing) {
+        logger.info(`server listening on port: ${this.config.server.port}`)
+      }
     })
   }
 
