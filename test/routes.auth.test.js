@@ -20,16 +20,18 @@ const {
 const Server = require('../src/server')
 const TEST_USER = 'test'
 const LONG_USER = '01234567899876543210123456'
+const clearCollection = (collection) => collection.removeMany({})
 
 describe('Authentication', () => {
-  let mongoClient
+  let mongoClient, usersColllection
   before(async () => {
     console.log('BEGIN')
     const connect = await MongoClient.connect(mongoConfig.url, {useNewUrlParser: true})
     mongoClient = await connect.db(mongoConfig.db)
+    usersColllection = await mongoClient.collection('users')
   })
   after(async () => {
-    mongoClient.collection('users').removeMany({})
+    await clearCollection(usersColllection)
     console.log('END')
   })
   describe('POST /login', () => {
@@ -119,6 +121,56 @@ describe('Authentication', () => {
       res.status.should.eql(400)
       res.body.status.should.eql('error')
       res.body.message.should.eql('wrong username length')
+    })
+
+    it('should be forbidden when we trying to login while logged in', async () => {
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+
+      const res = await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER + '1'
+        })
+      res.status.should.eql(403)
+      res.body.status.should.eql('error')
+      res.body.message.should.eql('access forbidden')
+    })
+
+    it('should create user after login', async () => {
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+
+      const user = await usersColllection.findOne({
+        username: TEST_USER
+      })
+
+      should.exist(user)
+
+      clearCollection(usersColllection)
+    })
+
+    it('should not create user when trying to login while logged in', async () => {
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER
+        })
+
+      await agent.post(`${baseApiRoute}/login`)
+        .send({
+          username: TEST_USER + '1'
+        })
+
+      const user = await usersColllection.findOne({
+        username: TEST_USER + '1'
+      })
+
+      should.not.exist(user)
+
+      clearCollection(usersColllection)
     })
   })
 
