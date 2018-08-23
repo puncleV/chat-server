@@ -2,7 +2,9 @@ const Koa = require('koa')
 const MongoClient = require('mongodb').MongoClient
 const BodyParser = require('koa-bodyparser')
 const session = require('koa-session')
+const http = require('http')
 
+const Socket = require('./socket')
 const logger = require('./helpers/logger')
 const loggerMiddleware = require('./middleware/logger')(logger)
 const router = require('./routes/index')
@@ -18,6 +20,7 @@ class Server {
     }
 
     this.server = null
+    this.socket = null
   }
 
   async initialize () {
@@ -36,7 +39,10 @@ class Server {
     app.use(BodyParser())
     app.use(router.routes())
 
-    this.server = app.listen(this.config.server.port, () => {
+    this.server = http.Server(app.callback())
+    this.socket = new Socket(this.server, app)
+
+    this.server.listen(this.config.server.port, () => {
       if (!testing) {
         logger.info(`server listening on port: ${this.config.server.port}`)
       }
