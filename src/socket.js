@@ -23,11 +23,36 @@ class Socket {
       return next(error)
     })
 
+    this.io.use(Socket.authCheck)
     this.io.on('connection', this.onConnection.bind(this))
+    // this.io.on('create-room', this.onConnection.bind(this))
+    // this.io.on('join-room', this.onConnection.bind(this))
+    // this.io.on('send-message', this.onConnection.bind(this))
   }
 
-  onConnection (data) {
-    console.log(data)
+  static authCheck (socket, next) {
+    if (typeof socket.session.username === 'string' && socket.session.username.length) {
+      next()
+    } else {
+      throw new Error('not authorized')
+    }
+  }
+
+  /**
+   * set socket's logger
+   * @param {object} logger Winston instance
+   */
+  setLogger (logger) {
+    this.logger = logger
+  }
+
+  onConnection (socket) {
+    this.logger.info(`${socket.session.username} connected`)
+    socket.on('disconnect', this.onDisconnect.bind(this))
+  }
+
+  onDisconnect (socket) {
+    this.logger.info(`${socket.session.username} disconnected`)
   }
 }
 

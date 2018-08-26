@@ -41,6 +41,7 @@ class Server {
 
     this.server = http.Server(app.callback())
     this.socket = new Socket(this.server, app)
+    this.socket.setLogger(logger)
 
     this.server.listen(this.config.server.port, () => {
       if (!testing) {
