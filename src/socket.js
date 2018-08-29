@@ -1,7 +1,7 @@
 const socket = require('socket.io')
 const http = require('http')
 const crypto = require('crypto')
-
+const ROOM_TYPES = require('./enums/room-types')
 /**
  * Client events:
  * 'rooms' - send rooms list to new client
@@ -75,7 +75,7 @@ class Socket {
   async onCreateRoom (socket, username, roomName, type) {
     if (
       typeof roomName === 'string' && roomName.length &&
-      typeof type === 'number' && (type === 0 || type === 1)
+      typeof type === 'number' && type in Object.values(ROOM_TYPES)
     ) {
       this.logger.info(`${username} creating room ${roomName}`)
 
@@ -130,11 +130,15 @@ class Socket {
           creator: username
         }
 
+        if (type === ROOM_TYPES.private) {
+          room.accessGranted = [ username ]
+        }
+
         await this.app.db.collection('rooms').insertOne(room)
 
         socket.emit('create room success', room)
 
-        if (type === 0) {
+        if (type === ROOM_TYPES.public) {
           socket.broadcast('new room', room)
         }
       } else {

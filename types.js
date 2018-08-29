@@ -12,6 +12,7 @@
  * @property {string} name room name
  * @property {hash} name room name
  * @property {string} creator room creator
+ * @property {Array.<string>} accessGranted users with access, empty on public
  * @property {RoomType} type rooms type
  */
 
