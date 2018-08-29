@@ -27,24 +27,7 @@ router.post(`/login`, async ctx => {
   }
 
   try {
-    const userCollection = await ctx.app.db.collection('users')
-
-    await userCollection.findOneAndUpdate(
-      {
-        username
-      }, {
-        $setOnInsert: {
-          username,
-          currentRoom: ''
-        },
-        $set: {
-          online: true
-        }
-      }, {
-        upsert: true
-      }
-    )
-
+    await ctx.app.api.get('user').addOrUpdateUser(username)
     ctx.session.username = username
   } catch (e) {
     return ResponseHelper.error(ctx, 500, 'server error')
@@ -67,17 +50,7 @@ router.get(`/logout`, async ctx => {
   }
 
   try {
-    const userCollection = await ctx.app.db.collection('users')
-
-    await userCollection.findOneAndUpdate(
-      {
-        username: ctx.session.username
-      }, {
-        $set: {
-          online: false
-        }
-      }
-    )
+    await ctx.app.api.get('user').setOnlineByUsername(ctx.session.username, false)
   } catch (e) {
     return ResponseHelper.error(ctx, 500, 'server error')
   }

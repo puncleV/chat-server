@@ -28,3 +28,13 @@
  * @typedef {number} RoomType
  * @description 0 - public; 1 - private;
  */
+
+/**
+ * @typedef {object} NormalizedRoom
+ * @description need to send room's data for user
+ * @property {string} name
+ * @property {RoomType} type
+ * @property {string} hash
+ * @property {string} creator
+ * @property {number} usersCount
+ */

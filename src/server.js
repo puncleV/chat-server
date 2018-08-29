@@ -21,11 +21,17 @@ class Server {
     this.socket = null
   }
 
-  async start (db) {
+  /**
+   * Start server, and middlewares etc
+   *
+   * @param {Api} api database api
+   * @return {Promise<void>}
+   */
+  async start (api) {
     const app = new Koa()
     app.keys = this.config.appSecrets
 
-    app.db = db
+    app.api = api
 
     app.use(loggerMiddleware)
     app.use(session(this.config.session, app))

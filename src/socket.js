@@ -71,22 +71,12 @@ class Socket {
     this.logger.info(`${username} disconnected`)
 
     try {
-      const user = await this.app.db.collection('users').findOne({
-        username
-      })
+      const user = await this.app.api.get('user').findOneByUsername(username)
 
       if (user.currentRoom) {
-        await this.app.db.collection('users').updateOne({
-          username
-        }, {
-          $set: {
-            currentRoom: ''
-          }
-        })
+        await this.app.api.get('user').setUserRoom(username, '')
 
-        const room = await this.app.db.collection('rooms').findOne({
-          hash: user.currentRoom
-        })
+        const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
         if (room.type === ROOM_TYPES.private) {
           Object.values(this.io
@@ -128,42 +118,11 @@ class Socket {
 
   async sendRooms (socket, username) {
     try {
-      const rooms = await this.app.db.collection('rooms').aggregate([
-        {
-          $match: {
-            $or: [
-              {
-                accessGranted: {$in: [username]}
-              },
-              {
-                type: ROOM_TYPES.public
-              }
-            ]
-          }
-        }, {
-          $lookup: {
-            from: 'users',
-            localField: 'hash',
-            foreignField: 'currentRoom',
-            as: 'users'
-          }
-        }, {
-          $project: {
-            _id: 0,
-            name: 1,
-            type: 1,
-            hash: 1,
-            creator: 1,
-            usersCount: {
-              $size: '$users'
-            }
-          }
-        }
-      ]).toArray()
+      const rooms = await this.app.api.get('room').findRoomListForUsername(username)
 
       socket.emit(ROOM_EVENTS.SEND, rooms)
     } catch (e) {
-      this.logger.error('sendRooms', e.message)
+      this.logger.error(`sendRooms ${e.message}`)
       socket.disconnect()
     }
 
@@ -180,9 +139,7 @@ class Socket {
    */
   async createRoom (socket, username, name, type) {
     try {
-      const dbRoom = await this.app.db.collection('rooms').findOne({
-        name: name
-      })
+      const dbRoom = await this.app.api.get('room').findOneByName(name)
 
       if (dbRoom === null) {
         // possible to create stronger salt
@@ -204,7 +161,7 @@ class Socket {
           room.accessGranted = [ username ]
         }
 
-        await this.app.db.collection('rooms').insertOne(room)
+        await this.app.api.get('room').addOne(room)
 
         socket.emit(ROOM_EVENTS.CREATE_SUCCESS, room)
 
@@ -230,25 +187,16 @@ class Socket {
    */
   async onJoin (socket, username, roomHash) {
     this.logger.info(`${username} is joining room ${roomHash}`)
+
     try {
-      const dbRoom = await this.app.db.collection('rooms').findOne({
-        hash: roomHash
-      })
+      const dbRoom = await this.app.api.get('room').findOneByHash(roomHash)
 
       if (dbRoom === null) {
         socket.emit(ROOM_EVENTS.JOIN_ERROR, `room does not exist`)
       } else {
-        const users = await this.app.db.collection('users').find({
-          currentRoom: roomHash
-        }).toArray()
+        const users = await this.app.api.get('user').findAllByCurrentRoom(roomHash)
 
-        await this.app.db.collection('users').updateOne({
-          username
-        }, {
-          $set: {
-            currentRoom: roomHash
-          }
-        })
+        await this.app.api.get('user').setUserRoom(username, roomHash)
 
         if (dbRoom.type === ROOM_TYPES.private) {
           Object.values(this.io
