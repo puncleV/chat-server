@@ -1,7 +1,9 @@
 const socket = require('socket.io')
 const http = require('http')
 const crypto = require('crypto')
+
 const ROOM_TYPES = require('./enums/room-types')
+const ROOM_EVENTS = require('./enums/room-events')
 /**
  * Client events:
  * 'rooms' - send rooms list to new client
@@ -60,7 +62,7 @@ class Socket {
 
     await this.sendRooms(socket, socket.session.username)
 
-    socket.on('create room', this.onCreateRoom.bind(this, socket, socket.session.username))
+    socket.on(ROOM_EVENTS.CREATE_REQUEST, this.onCreateRoom.bind(this, socket, socket.session.username))
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
   }
 
@@ -100,7 +102,7 @@ class Socket {
         ]
       }).toArray()
 
-      socket.emit('rooms', rooms)
+      socket.emit(ROOM_EVENTS.SEND, rooms)
     } catch (e) {
       this.logger.error('sendRooms', e.message)
       socket.disconnect()
@@ -145,17 +147,17 @@ class Socket {
 
         await this.app.db.collection('rooms').insertOne(room)
 
-        socket.emit('create room success', room)
+        socket.emit(ROOM_EVENTS.CREATE_SUCCESS, room)
 
         if (type === ROOM_TYPES.public) {
           socket.broadcast('new room', room)
         }
       } else {
-        socket.emit('create room error', `Name '${name}' is busy`)
+        socket.emit(ROOM_EVENTS.CREATE_ERROR, `Name '${name}' is busy`)
       }
     } catch (e) {
       this.logger.error('createRoom', e.message)
-      socket.emit('create room error', `Can not create room ${name}`)
+      socket.emit(ROOM_EVENTS.CREATE_ERROR, `Can not create room ${name}`)
     }
 
     return true
