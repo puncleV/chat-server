@@ -62,8 +62,25 @@ class Socket {
 
     await this.sendRooms(socket, socket.session.username)
 
-    socket.on(ROOM_EVENTS.CREATE_REQUEST, this.onCreateRoom.bind(this, socket, socket.session.username))
+    socket.on(ROOM_EVENTS.CREATE, this.onCreateRoom.bind(this, socket, socket.session.username))
+    socket.on(ROOM_EVENTS.JOIN, this.onJoin.bind(this, socket, socket.session.username))
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
+  }
+
+  async onDisconnect (socket, username) {
+    this.logger.info(`${username} disconnected`)
+
+    try {
+      await this.app.db.collection('users').updateOne({
+        username
+      }, {
+        $set: {
+          currentRoom: ''
+        }
+      })
+    } catch (e) {
+      this.logger.error(`Reset user's current room  | ${e.message}`)
+    }
   }
 
   /**
@@ -85,22 +102,40 @@ class Socket {
     }
   }
 
-  onDisconnect (socket, username) {
-    this.logger.info(`${username} disconnected`)
-  }
-
   async sendRooms (socket, username) {
     try {
-      const rooms = await this.app.db.collection('rooms').find({
-        $or: [
-          {
-            accessGranted: { $in: [ username ] }
-          },
-          {
-            type: ROOM_TYPES.public
+      const rooms = await this.app.db.collection('rooms').aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                accessGranted: {$in: [username]}
+              },
+              {
+                type: ROOM_TYPES.public
+              }
+            ]
           }
-        ]
-      }).toArray()
+        }, {
+          $lookup: {
+            from: 'users',
+            localField: 'hash',
+            foreignField: 'currentRoom',
+            as: 'users'
+          }
+        }, {
+          $project: {
+            _id: 0,
+            name: 1,
+            type: 1,
+            hash: 1,
+            creator: 1,
+            usersCount: {
+              $size: '$users'
+            }
+          }
+        }
+      ]).toArray()
 
       socket.emit(ROOM_EVENTS.SEND, rooms)
     } catch (e) {
@@ -150,7 +185,7 @@ class Socket {
         socket.emit(ROOM_EVENTS.CREATE_SUCCESS, room)
 
         if (type === ROOM_TYPES.public) {
-          socket.broadcast('new room', room)
+          socket.broadcast.emit(ROOM_EVENTS.NEW, room)
         }
       } else {
         socket.emit(ROOM_EVENTS.CREATE_ERROR, `Name '${name}' is busy`)
@@ -161,6 +196,62 @@ class Socket {
     }
 
     return true
+  }
+
+  /**
+   * Handle join event
+   * @param {Socket} socket - clients socket
+   * @param {string} username
+   * @param {string} roomHash room's hash
+   */
+  async onJoin (socket, username, roomHash) {
+    this.logger.info(`${username} is joining room ${roomHash}`)
+
+    try {
+      const dbRoom = await this.app.db.collection('rooms').findOne({
+        hash: roomHash
+      })
+
+      if (dbRoom === null) {
+        socket.emit(ROOM_EVENTS.JOIN_ERROR, `room does not exist`)
+      } else {
+        const users = await this.app.db.collection('users').find({
+          currentRoom: roomHash
+        }).toArray()
+
+        await this.app.db.collection('users').updateOne({
+          username
+        }, {
+          $set: {
+            currentRoom: roomHash
+          }
+        })
+
+        if (dbRoom.type === ROOM_TYPES.private) {
+          this.io
+            .clients()
+            .connected
+            .forEach(clientSocket => {
+              if (clientSocket.session.username in dbRoom.accessGranted) {
+                clientSocket.emit(ROOM_EVENTS.USER_JOINED, { username, roomHash })
+              }
+            })
+        } else {
+          socket.broadcast.emit(ROOM_EVENTS.USER_JOINED, { username, roomHash })
+        }
+
+        socket.emit(ROOM_EVENTS.JOIN_SUCCESS, {
+          username,
+          roomHash,
+          users
+        })
+
+        this.logger.info(`${username} is joined room ${roomHash}`)
+      }
+    } catch (e) {
+      this.logger.error(`join room ${e.message}`)
+      socket.emit(ROOM_EVENTS.JOIN_ERROR, `can not join room`)
+    }
   }
 }
 
