@@ -4,7 +4,7 @@ process.env.NODE_ENV = 'test'
 const chai = require('chai')
 const chaiHttp = require('chai-http')
 const expect = chai.expect
-const { baseApiRoute } = require('../config')
+const { baseApiRoute, auth: { baseRoute: baseAuthRoute } } = require('../config')
 const should = chai.should()
 const MongoClient = require('mongodb').MongoClient
 
@@ -41,11 +41,10 @@ describe('Authentication', () => {
       const server = new Server({
         appSecrets,
         serverConfig,
-        sessionConfig,
-        mongoConfig
+        sessionConfig
       })
 
-      await server.initialize()
+      await server.start(mongoClient)
       agent = chai.request.agent(server.getServer())
     })
 
@@ -55,7 +54,7 @@ describe('Authentication', () => {
 
     it('should set cookies', async () => {
       const res = await agent
-        .post(`${baseApiRoute}/login`)
+        .post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
@@ -65,7 +64,7 @@ describe('Authentication', () => {
     })
 
     it('should not set cookies with wrong username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: 228
         })
@@ -73,7 +72,7 @@ describe('Authentication', () => {
     })
 
     it('should set error status and message with wrong username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: 228
         })
@@ -84,7 +83,7 @@ describe('Authentication', () => {
     })
 
     it('should not set cookies with empty username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: ''
         })
@@ -93,7 +92,7 @@ describe('Authentication', () => {
     })
 
     it('should set error status and message with empty username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: ''
         })
@@ -104,7 +103,7 @@ describe('Authentication', () => {
     })
 
     it('should not login with too long username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: LONG_USER
         })
@@ -113,7 +112,7 @@ describe('Authentication', () => {
     })
 
     it('should set error status with too long username', async () => {
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: LONG_USER
         })
@@ -124,12 +123,12 @@ describe('Authentication', () => {
     })
 
     it('should be forbidden when we trying to login while logged in', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
 
-      const res = await agent.post(`${baseApiRoute}/login`)
+      const res = await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER + '1'
         })
@@ -139,7 +138,7 @@ describe('Authentication', () => {
     })
 
     it('should create user after login', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
@@ -154,12 +153,12 @@ describe('Authentication', () => {
     })
 
     it('should not create user when trying to login while logged in', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
 
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER + '1'
         })
@@ -179,7 +178,7 @@ describe('Authentication', () => {
         online: false
       })
 
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
@@ -201,11 +200,10 @@ describe('Authentication', () => {
       const server = new Server({
         appSecrets,
         serverConfig,
-        sessionConfig,
-        mongoConfig
+        sessionConfig
       })
 
-      await server.initialize()
+      await server.start(mongoClient)
       agent = chai.request.agent(server.getServer())
     })
 
@@ -214,19 +212,19 @@ describe('Authentication', () => {
     })
 
     it('should return success', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
 
-      const res = await agent.get(`${baseApiRoute}/checkLogin`)
+      const res = await agent.get(`${baseApiRoute}${baseAuthRoute}/checkLogin`)
 
       res.status.should.eql(200)
       res.body.status.should.eql('success')
     })
 
     it('should return 401', async () => {
-      const res = await agent.get(`${baseApiRoute}/checkLogin`)
+      const res = await agent.get(`${baseApiRoute}${baseAuthRoute}/checkLogin`)
 
       res.status.should.eql(401)
       res.body.status.should.eql('error')
@@ -239,11 +237,10 @@ describe('Authentication', () => {
       const server = new Server({
         appSecrets,
         serverConfig,
-        sessionConfig,
-        mongoConfig
+        sessionConfig
       })
 
-      await server.initialize()
+      await server.start(mongoClient)
       agent = chai.request.agent(server.getServer())
     })
 
@@ -252,12 +249,12 @@ describe('Authentication', () => {
     })
 
     it('should logout user', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
 
-      const res = await agent.get(`${baseApiRoute}/logout`).send()
+      const res = await agent.get(`${baseApiRoute}${baseAuthRoute}/logout`).send()
 
       res.status.should.eql(200)
       res.body.status.should.eql('success')
@@ -266,11 +263,11 @@ describe('Authentication', () => {
     })
 
     it('should set user\'s online status to false', async () => {
-      await agent.post(`${baseApiRoute}/login`)
+      await agent.post(`${baseApiRoute}${baseAuthRoute}/login`)
         .send({
           username: TEST_USER
         })
-      await agent.get(`${baseApiRoute}/logout`).send()
+      await agent.get(`${baseApiRoute}${baseAuthRoute}/logout`).send()
 
       const user = await usersColllection.findOne({
         username: TEST_USER
@@ -282,7 +279,7 @@ describe('Authentication', () => {
     })
 
     it('should be unauthorized error while not logged in', async () => {
-      const res = await agent.get(`${baseApiRoute}/logout`).send()
+      const res = await agent.get(`${baseApiRoute}${baseAuthRoute}/logout`).send()
 
       res.status.should.eql(401)
       res.body.status.should.eql('error')

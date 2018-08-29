@@ -1,5 +1,4 @@
 const Koa = require('koa')
-const MongoClient = require('mongodb').MongoClient
 const BodyParser = require('koa-bodyparser')
 const session = require('koa-session')
 const http = require('http')
@@ -15,24 +14,18 @@ class Server {
     this.config = {
       appSecrets: config.appSecrets,
       server: config.serverConfig,
-      session: config.sessionConfig,
-      mongo: config.mongoConfig
+      session: config.sessionConfig
     }
 
     this.server = null
     this.socket = null
   }
 
-  async initialize () {
+  async start (db) {
     const app = new Koa()
     app.keys = this.config.appSecrets
 
-    try {
-      await this.connectDatabase(app)
-    } catch (e) {
-      logger.error('can not connect to database:', e.message)
-      process.exit(-1)
-    }
+    app.db = db
 
     app.use(loggerMiddleware)
     app.use(session(this.config.session, app))
@@ -48,12 +41,6 @@ class Server {
         logger.info(`server listening on port: ${this.config.server.port}`)
       }
     })
-  }
-
-  async connectDatabase (app) {
-    const client = await MongoClient.connect(this.config.mongo.url, {useNewUrlParser: true})
-
-    app.db = await client.db(this.config.mongo.db)
   }
 
   getServer () {
