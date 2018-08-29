@@ -2,7 +2,6 @@
  * @typedef {object} User
  * @property {mongo.ObjectID} _id - user id
  * @property {string} username username
- * @property {Array.<string>} privateRooms private room keys
  * @property {boolean} online online status
  */
 

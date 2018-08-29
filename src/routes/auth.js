@@ -2,7 +2,6 @@ const Router = require('koa-router')
 
 const ResponseHelper = require('../helpers/response-helper')
 const { auth: {usernameMaxLength, baseRoute} } = require('../../config')
-const UserApi = require('../db/user-api')
 const router = new Router()
 const authRouter = new Router()
 
@@ -30,7 +29,21 @@ router.post(`/login`, async ctx => {
   try {
     const userCollection = await ctx.app.db.collection('users')
 
-    await UserApi.login(userCollection, username)
+    await userCollection.findOneAndUpdate(
+      {
+        username
+      }, {
+        $setOnInsert: {
+          username,
+          currentRoom: ''
+        },
+        $set: {
+          online: true
+        }
+      }, {
+        upsert: true
+      }
+    )
 
     ctx.session.username = username
   } catch (e) {
@@ -56,7 +69,16 @@ router.get(`/logout`, async ctx => {
   try {
     const userCollection = await ctx.app.db.collection('users')
 
-    await UserApi.logout(userCollection, ctx.session.username)
+    await userCollection.findOneAndUpdate(
+      {
+        username: ctx.session.username
+      }, {
+        $set: {
+          currentRoom: '',
+          online: false
+        }
+      }
+    )
   } catch (e) {
     return ResponseHelper.error(ctx, 500, 'server error')
   }

@@ -7,6 +7,7 @@ const {
   session: sessionConfig,
   mongo: mongoConfig
 } = require('../config')
+
 const main = async () => {
   const client = await MongoClient.connect(mongoConfig.url, {useNewUrlParser: true})
   const db = await client.db(mongoConfig.db)
