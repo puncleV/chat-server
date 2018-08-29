@@ -58,7 +58,7 @@ class Socket {
   async onConnection (socket) {
     this.logger.info(`${socket.session.username} connection`)
 
-    await this.sendRooms(socket)
+    await this.sendRooms(socket, socket.session.username)
 
     socket.on('create room', this.onCreateRoom.bind(this, socket, socket.session.username))
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
@@ -87,9 +87,18 @@ class Socket {
     this.logger.info(`${username} disconnected`)
   }
 
-  async sendRooms (socket) {
+  async sendRooms (socket, username) {
     try {
-      const rooms = await this.app.db.collection('rooms').find({}).toArray()
+      const rooms = await this.app.db.collection('rooms').find({
+        $or: [
+          {
+            accessGranted: { $in: [ username ] }
+          },
+          {
+            type: ROOM_TYPES.public
+          }
+        ]
+      }).toArray()
 
       socket.emit('rooms', rooms)
     } catch (e) {
