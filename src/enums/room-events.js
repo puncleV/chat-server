@@ -10,7 +10,8 @@ const ROOM_EVENTS = {
   JOIN: 'join room',
   JOIN_SUCCESS: 'join room success',
   JOIN_ERROR: 'join room error',
-  USER_JOINED: 'user joined'
+  USER_JOINED: 'user joined',
+  USER_LEAVE: 'user leave'
 }
 
 module.exports = Object.freeze(ROOM_EVENTS)

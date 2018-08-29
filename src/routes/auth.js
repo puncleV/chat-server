@@ -74,7 +74,6 @@ router.get(`/logout`, async ctx => {
         username: ctx.session.username
       }, {
         $set: {
-          currentRoom: '',
           online: false
         }
       }

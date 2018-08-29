@@ -33,8 +33,10 @@ class Server {
     app.use(router.routes())
 
     this.server = http.Server(app.callback())
+
     this.socket = new Socket(this.server, app)
     this.socket.setLogger(logger)
+    app.socket = this.socket
 
     this.server.listen(this.config.server.port, () => {
       if (!testing) {

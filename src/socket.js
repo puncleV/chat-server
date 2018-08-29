@@ -71,15 +71,39 @@ class Socket {
     this.logger.info(`${username} disconnected`)
 
     try {
-      await this.app.db.collection('users').updateOne({
+      const user = await this.app.db.collection('users').findOne({
         username
-      }, {
-        $set: {
-          currentRoom: ''
-        }
       })
+
+      if (user.currentRoom) {
+        await this.app.db.collection('users').updateOne({
+          username
+        }, {
+          $set: {
+            currentRoom: ''
+          }
+        })
+
+        const room = await this.app.db.collection('rooms').findOne({
+          hash: user.currentRoom
+        })
+
+        if (room.type === ROOM_TYPES.private) {
+          Object.values(this.io
+            .clients()
+            .connected
+          )
+            .forEach(clientSocket => {
+              if (clientSocket.session.username in room.accessGranted) {
+                clientSocket.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
+              }
+            })
+        } else {
+          socket.broadcast.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
+        }
+      }
     } catch (e) {
-      this.logger.error(`Reset user's current room  | ${e.message}`)
+      this.logger.error(`Disconnection user | ${e.message}`)
     }
   }
 
@@ -206,7 +230,6 @@ class Socket {
    */
   async onJoin (socket, username, roomHash) {
     this.logger.info(`${username} is joining room ${roomHash}`)
-
     try {
       const dbRoom = await this.app.db.collection('rooms').findOne({
         hash: roomHash
@@ -228,9 +251,10 @@ class Socket {
         })
 
         if (dbRoom.type === ROOM_TYPES.private) {
-          this.io
+          Object.values(this.io
             .clients()
             .connected
+          )
             .forEach(clientSocket => {
               if (clientSocket.session.username in dbRoom.accessGranted) {
                 clientSocket.emit(ROOM_EVENTS.USER_JOINED, { username, roomHash })
