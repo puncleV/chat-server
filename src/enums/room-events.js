@@ -8,6 +8,7 @@ const ROOM_EVENTS = {
   SEND: 'rooms',
   NEW: 'new room',
   JOIN: 'join room',
+  LEAVE: 'leave room',
   JOIN_SUCCESS: 'join room success',
   JOIN_ERROR: 'join room error',
   USER_JOINED: 'user joined',

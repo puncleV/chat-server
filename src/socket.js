@@ -64,12 +64,17 @@ class Socket {
 
     socket.on(ROOM_EVENTS.CREATE, this.onCreateRoom.bind(this, socket, socket.session.username))
     socket.on(ROOM_EVENTS.JOIN, this.onJoin.bind(this, socket, socket.session.username))
+    socket.on(ROOM_EVENTS.LEAVE, this.onLeaveRoom.bind(this, socket, socket.session.username))
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
   }
 
   async onDisconnect (socket, username) {
     this.logger.info(`${username} disconnected`)
 
+    await this.onLeaveRoom(socket, username)
+  }
+
+  async onLeaveRoom (socket, username) {
     try {
       const user = await this.app.api.get('user').findOneByUsername(username)
 
@@ -78,22 +83,12 @@ class Socket {
 
         const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
-        if (room.type === ROOM_TYPES.private) {
-          Object.values(this.io
-            .clients()
-            .connected
-          )
-            .forEach(clientSocket => {
-              if (clientSocket.session.username in room.accessGranted) {
-                clientSocket.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
-              }
-            })
-        } else {
-          socket.broadcast.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
-        }
+        this.sendMessageToRoomParticipants(socket, ROOM_EVENTS.USER_LEAVE, room, username)
+
+        socket.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
     } catch (e) {
-      this.logger.error(`Disconnection user | ${e.message}`)
+      this.logger.error(`leave room | ${e.message}`)
     }
   }
 
@@ -198,19 +193,7 @@ class Socket {
 
         await this.app.api.get('user').setUserRoom(username, roomHash)
 
-        if (dbRoom.type === ROOM_TYPES.private) {
-          Object.values(this.io
-            .clients()
-            .connected
-          )
-            .forEach(clientSocket => {
-              if (clientSocket.session.username in dbRoom.accessGranted) {
-                clientSocket.emit(ROOM_EVENTS.USER_JOINED, { username, roomHash })
-              }
-            })
-        } else {
-          socket.broadcast.emit(ROOM_EVENTS.USER_JOINED, { username, roomHash })
-        }
+        this.sendMessageToRoomParticipants(socket, ROOM_EVENTS.USER_JOINED, dbRoom, username)
 
         socket.emit(ROOM_EVENTS.JOIN_SUCCESS, {
           username,
@@ -223,6 +206,22 @@ class Socket {
     } catch (e) {
       this.logger.error(`join room ${e.message}`)
       socket.emit(ROOM_EVENTS.JOIN_ERROR, `can not join room`)
+    }
+  }
+
+  sendMessageToRoomParticipants (socket, event, room, username) {
+    if (room.type === ROOM_TYPES.private) {
+      Object.values(this.io
+        .clients()
+        .connected
+      )
+        .forEach(clientSocket => {
+          if (clientSocket.session.username in room.accessGranted) {
+            clientSocket.emit(event, { username, roomHash: room.hash })
+          }
+        })
+    } else {
+      socket.broadcast.emit(event, { username, roomHash: room.hash })
     }
   }
 }
