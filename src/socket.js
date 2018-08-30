@@ -67,6 +67,7 @@ class Socket {
     socket.on(RoomEvents.JOIN, this.onJoin.bind(this, socket, socket.session.username))
     socket.on(RoomEvents.LEAVE, this.onLeaveRoom.bind(this, socket, socket.session.username))
     socket.on(RoomEvents.ADD, this.onAddRoom.bind(this, socket, socket.session.username))
+    socket.on(RoomEvents.REMOVE, this.onRemoveRoom.bind(this, socket, socket.session.username))
     socket.on(MessageEvents.MESSAGE, this.onMessage.bind(this, socket, socket.session.username))
 
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
@@ -262,6 +263,34 @@ class Socket {
       this.logger.error(`add room ${e.message}`)
 
       socket.emit(RoomEvents.ADD_ERROR, `can not add room`)
+    }
+  }
+
+  async onRemoveRoom (socket, username, { hash }) {
+    try {
+      const dbRoom = await this.app.api.get('room').findOneByHash(hash)
+
+      if (dbRoom === null) {
+        socket.emit(RoomEvents.REMOVE_ERROR, `room does not exist`)
+      } else {
+        if (dbRoom.type === RoomTypes.public || !dbRoom.accessGranted.includes(username)) {
+          socket.emit(RoomEvents.REMOVE_ERROR, `you can not remove this room`)
+
+          return
+        }
+
+        dbRoom.accessGranted = dbRoom.accessGranted.filter(user => user !== username)
+
+        await this.app.api.get('room').update(dbRoom)
+
+        this.logger.info(`${username} removed ${hash}`)
+
+        await this.sendRooms(socket, username)
+      }
+    } catch (e) {
+      this.logger.error(`remove room ${e.message}`)
+
+      socket.emit(RoomEvents.REMOVE_ERROR, `can not remove room`)
     }
   }
 
