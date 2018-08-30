@@ -88,7 +88,7 @@ class Socket {
 
         const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
-        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, room, username)
+        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, {roomHash: room, username})
 
         socket.emit(RoomEvents.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
@@ -197,15 +197,17 @@ class Socket {
         socket.emit(RoomEvents.JOIN_ERROR, `room does not exist`)
       } else {
         const users = await this.app.api.get('user').findAllByCurrentRoom(hash)
+        const messages = await this.app.api.get('message').findByRoomId(dbRoom._id)
 
         await this.app.api.get('user').setUserRoom(username, hash)
 
-        this.emitEventToRoomParticipants(socket, RoomEvents.USER_JOINED, dbRoom, username)
+        this.emitEventToRoomParticipants(socket, RoomEvents.USER_JOINED, dbRoom, { roomHash: dbRoom.hash, username })
 
         socket.emit(RoomEvents.JOIN_SUCCESS, {
           username,
           hash,
-          users
+          users,
+          messages
         })
 
         this.logger.info(`${username} is joined room ${hash}`)
@@ -217,17 +219,17 @@ class Socket {
     }
   }
 
-  emitEventToRoomParticipants (socket, event, room, username) {
+  emitEventToRoomParticipants (socket, event, room, message) {
     if (room.type === RoomTypes.private) {
       Object.values(this.io.clients().connected).forEach(
         clientSocket => {
           if (clientSocket.session.username in room.accessGranted) {
-            clientSocket.emit(event, { username, roomHash: room.hash })
+            clientSocket.emit(event, message)
           }
         }
       )
     } else {
-      socket.broadcast.emit(event, { username, roomHash: room.hash })
+      socket.broadcast.emit(event, message)
     }
   }
 
@@ -294,8 +296,40 @@ class Socket {
     }
   }
 
-  onMessage (socket, username, { roomHash, message }) {
+  async onMessage (socket, username, { roomHash, message }) {
+    if (typeof message !== 'string') {
+      socket.emit(MessageEvents.MESSAGE_ERROR, `wrong message format`)
+      return
+    }
 
+    try {
+      const dbRoom = await this.app.api.get('room').findOneByHash(roomHash)
+
+      if (dbRoom === null) {
+        socket.emit(MessageEvents.MESSAGE_ERROR, `room does not exist`)
+      } else {
+        const datetime = Date.now()
+
+        await this.app.api.get('message').addOne(username, message, datetime, dbRoom._id)
+
+        this.logger.info(`${username} send message`)
+
+        this.emitEventToRoomParticipants(
+          socket, MessageEvents.MESSAGE, dbRoom,
+          {
+            from: username, message, datetime, roomHash
+          }
+        )
+
+        socket.emit(MessageEvents.MESSAGE_SUCCESS, {
+          from: username, message, datetime, roomHash
+        })
+      }
+    } catch (e) {
+      this.logger.error(`remove room ${e.message}`)
+
+      socket.emit(MessageEvents.MESSAGE_ERROR, `can not send message`)
+    }
   }
 }
 

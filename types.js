@@ -18,10 +18,10 @@
 /**
  * @typedef {object} Message
  * @property {mongo.ObjectID} _id - message id
- * @property {string} to message to (all - to all)
  * @property {string} from message from
  * @property {string} text message text
- * @property {mongo.ObjectID} room id
+ * @property {number} datetime message text
+ * @property {mongo.ObjectID} roomId
  */
 
 /**
