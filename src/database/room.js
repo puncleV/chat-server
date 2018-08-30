@@ -5,6 +5,15 @@ class RoomEntity {
   }
 
   /**
+   * Update room
+   *
+   * @param {RoomType} room
+   */
+  update (room) {
+    return this.db.collection('rooms').findOneAndUpdate({ _id: room._id }, { $set: room })
+  }
+
+  /**
    * Finds room by hash
    *
    * @param {string} hash
