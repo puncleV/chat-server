@@ -1,7 +1,7 @@
 /**
  * @enum {string}
  */
-const ROOM_EVENTS = {
+const RoomEvents = {
   CREATE: 'create room',
   CREATE_SUCCESS: 'create room success',
   CREATE_ERROR: 'create room error',
@@ -15,4 +15,4 @@ const ROOM_EVENTS = {
   USER_LEAVE: 'user leave'
 }
 
-module.exports = Object.freeze(ROOM_EVENTS)
+module.exports = Object.freeze(RoomEvents)
