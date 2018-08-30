@@ -211,15 +211,13 @@ class Socket {
 
   sendMessageToRoomParticipants (socket, event, room, username) {
     if (room.type === RoomTypes.private) {
-      Object.values(this.io
-        .clients()
-        .connected
-      )
-        .forEach(clientSocket => {
+      Object.values(this.io.clients().connected).forEach(
+        clientSocket => {
           if (clientSocket.session.username in room.accessGranted) {
             clientSocket.emit(event, { username, roomHash: room.hash })
           }
-        })
+        }
+      )
     } else {
       socket.broadcast.emit(event, { username, roomHash: room.hash })
     }
