@@ -6,6 +6,7 @@ const main = async () => {
   const db = await client.db(config.mongo.db)
   const userCollection = await db.collection('users')
   const roomCollection = await db.collection('rooms')
+  const messageCollection = await db.collection('messages')
 
   try {
     await userCollection.createIndex({
@@ -53,6 +54,14 @@ const main = async () => {
     })
   } catch (e) {
     console.log('Rooms: hash create index error:', e)
+  }
+
+  try {
+    await messageCollection.createIndex({
+      roomId: 1
+    })
+  } catch (e) {
+    console.log('Messages: roomId create index error:', e)
   }
 
   process.exit(0)
