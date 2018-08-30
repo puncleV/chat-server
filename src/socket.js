@@ -205,6 +205,7 @@ class Socket {
       }
     } catch (e) {
       this.logger.error(`join room ${e.message}`)
+
       socket.emit(RoomEvents.JOIN_ERROR, `can not join room`)
     }
   }

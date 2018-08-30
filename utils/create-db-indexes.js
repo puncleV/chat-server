@@ -20,19 +20,19 @@ const main = async () => {
   try {
     // to performance when looking for users in current room
     await userCollection.createIndex({
-      username: 1,
       currentRoom: 1
     })
   } catch (e) {
-    console.log('Users: username + currentRoom create index error:', e)
+    console.log('Users: currentRoom create index error:', e)
   }
 
   try {
     await roomCollection.createIndex({
-      creator: 1
+      accessGranted: 1,
+      type: 1
     })
   } catch (e) {
-    console.log('Rooms: creator create index error:', e)
+    console.log('Rooms: accessGranted + type create index error:', e)
   }
 
   try {
@@ -42,7 +42,17 @@ const main = async () => {
       unique: true
     })
   } catch (e) {
-    console.log('Rooms: creator create index error:', e)
+    console.log('Rooms: name create index error:', e)
+  }
+
+  try {
+    await roomCollection.createIndex({
+      hash: 1
+    }, {
+      unique: true
+    })
+  } catch (e) {
+    console.log('Rooms: hash create index error:', e)
   }
 
   process.exit(0)
