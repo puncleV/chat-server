@@ -2,8 +2,8 @@ const socket = require('socket.io')
 const http = require('http')
 const crypto = require('crypto')
 
-const ROOM_TYPES = require('./enums/room-types')
-const ROOM_EVENTS = require('./enums/room-events')
+const RoomTypes = require('./enums/room-types')
+const RoomEvents = require('./enums/room-events')
 /**
  * Client events:
  * 'rooms' - send rooms list to new client
@@ -62,9 +62,9 @@ class Socket {
 
     await this.sendRooms(socket, socket.session.username)
 
-    socket.on(ROOM_EVENTS.CREATE, this.onCreateRoom.bind(this, socket, socket.session.username))
-    socket.on(ROOM_EVENTS.JOIN, this.onJoin.bind(this, socket, socket.session.username))
-    socket.on(ROOM_EVENTS.LEAVE, this.onLeaveRoom.bind(this, socket, socket.session.username))
+    socket.on(RoomEvents.CREATE, this.onCreateRoom.bind(this, socket, socket.session.username))
+    socket.on(RoomEvents.JOIN, this.onJoin.bind(this, socket, socket.session.username))
+    socket.on(RoomEvents.LEAVE, this.onLeaveRoom.bind(this, socket, socket.session.username))
     socket.on('disconnect', this.onDisconnect.bind(this, socket, socket.session.username))
   }
 
@@ -83,9 +83,9 @@ class Socket {
 
         const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
-        this.sendMessageToRoomParticipants(socket, ROOM_EVENTS.USER_LEAVE, room, username)
+        this.sendMessageToRoomParticipants(socket, RoomEvents.USER_LEAVE, room, username)
 
-        socket.emit(ROOM_EVENTS.USER_LEAVE, { username, roomHash: user.currentRoom })
+        socket.emit(RoomEvents.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
     } catch (e) {
       this.logger.error(`leave room | ${e.message}`)
@@ -103,7 +103,7 @@ class Socket {
   async onCreateRoom (socket, username, roomName, type) {
     if (
       typeof roomName === 'string' && roomName.length &&
-      typeof type === 'number' && type in Object.values(ROOM_TYPES)
+      typeof type === 'number' && type in Object.values(RoomTypes)
     ) {
       this.logger.info(`${username} creating room ${roomName}`)
 
@@ -115,7 +115,7 @@ class Socket {
     try {
       const rooms = await this.app.api.get('room').findRoomListForUsername(username)
 
-      socket.emit(ROOM_EVENTS.SEND, rooms)
+      socket.emit(RoomEvents.SEND, rooms)
     } catch (e) {
       this.logger.error(`sendRooms ${e.message}`)
       socket.disconnect()
@@ -152,23 +152,23 @@ class Socket {
           creator: username
         }
 
-        if (type === ROOM_TYPES.private) {
+        if (type === RoomTypes.private) {
           room.accessGranted = [ username ]
         }
 
         await this.app.api.get('room').addOne(room)
 
-        socket.emit(ROOM_EVENTS.CREATE_SUCCESS, room)
+        socket.emit(RoomEvents.CREATE_SUCCESS, room)
 
-        if (type === ROOM_TYPES.public) {
-          socket.broadcast.emit(ROOM_EVENTS.NEW, room)
+        if (type === RoomTypes.public) {
+          socket.broadcast.emit(RoomEvents.NEW, room)
         }
       } else {
-        socket.emit(ROOM_EVENTS.CREATE_ERROR, `Name '${name}' is busy`)
+        socket.emit(RoomEvents.CREATE_ERROR, `Name '${name}' is busy`)
       }
     } catch (e) {
       this.logger.error('createRoom', e.message)
-      socket.emit(ROOM_EVENTS.CREATE_ERROR, `Can not create room ${name}`)
+      socket.emit(RoomEvents.CREATE_ERROR, `Can not create room ${name}`)
     }
 
     return true
@@ -187,15 +187,15 @@ class Socket {
       const dbRoom = await this.app.api.get('room').findOneByHash(roomHash)
 
       if (dbRoom === null) {
-        socket.emit(ROOM_EVENTS.JOIN_ERROR, `room does not exist`)
+        socket.emit(RoomEvents.JOIN_ERROR, `room does not exist`)
       } else {
         const users = await this.app.api.get('user').findAllByCurrentRoom(roomHash)
 
         await this.app.api.get('user').setUserRoom(username, roomHash)
 
-        this.sendMessageToRoomParticipants(socket, ROOM_EVENTS.USER_JOINED, dbRoom, username)
+        this.sendMessageToRoomParticipants(socket, RoomEvents.USER_JOINED, dbRoom, username)
 
-        socket.emit(ROOM_EVENTS.JOIN_SUCCESS, {
+        socket.emit(RoomEvents.JOIN_SUCCESS, {
           username,
           roomHash,
           users
@@ -205,12 +205,12 @@ class Socket {
       }
     } catch (e) {
       this.logger.error(`join room ${e.message}`)
-      socket.emit(ROOM_EVENTS.JOIN_ERROR, `can not join room`)
+      socket.emit(RoomEvents.JOIN_ERROR, `can not join room`)
     }
   }
 
   sendMessageToRoomParticipants (socket, event, room, username) {
-    if (room.type === ROOM_TYPES.private) {
+    if (room.type === RoomTypes.private) {
       Object.values(this.io
         .clients()
         .connected
