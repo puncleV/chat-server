@@ -1,5 +1,5 @@
 const ROOM_TYPES = require('../enums/room-types')
-class RoomEntity {
+class Room {
   constructor (db) {
     this.db = db
   }
@@ -82,4 +82,4 @@ class RoomEntity {
   }
 }
 
-module.exports = RoomEntity
+module.exports = Room

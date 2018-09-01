@@ -1,4 +1,4 @@
-class UserEntity {
+class User {
   constructor (db) {
     this.db = db
   }
@@ -83,4 +83,4 @@ class UserEntity {
   }
 }
 
-module.exports = UserEntity
+module.exports = User

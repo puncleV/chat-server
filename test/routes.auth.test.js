@@ -7,6 +7,7 @@ const expect = chai.expect
 const { baseApiRoute, auth: { baseRoute: baseAuthRoute } } = require('../config')
 const should = chai.should()
 const MongoClient = require('mongodb').MongoClient
+const Api = require('../src/database/api')
 
 chai.use(chaiHttp)
 
@@ -23,12 +24,13 @@ const LONG_USER = '01234567899876543210123456'
 const clearCollection = (collection) => collection.removeMany({})
 
 describe('Authentication', () => {
-  let mongoClient, usersColllection
+  let mongoClient, usersColllection, api
   before(async () => {
     console.log('BEGIN')
     const connect = await MongoClient.connect(mongoConfig.url, {useNewUrlParser: true})
     mongoClient = await connect.db(mongoConfig.db)
     usersColllection = await mongoClient.collection('users')
+    api = new Api(mongoClient)
   })
   after(async () => {
     await clearCollection(usersColllection)
@@ -44,7 +46,7 @@ describe('Authentication', () => {
         sessionConfig
       })
 
-      await server.start(mongoClient)
+      await server.start(api)
       agent = chai.request.agent(server.getServer())
     })
 
@@ -58,7 +60,6 @@ describe('Authentication', () => {
         .send({
           username: TEST_USER
         })
-
       res.status.should.eql(200)
       expect(res).to.have.cookie(sessionConfig.key)
     })
@@ -203,7 +204,7 @@ describe('Authentication', () => {
         sessionConfig
       })
 
-      await server.start(mongoClient)
+      await server.start(api)
       agent = chai.request.agent(server.getServer())
     })
 
@@ -240,7 +241,7 @@ describe('Authentication', () => {
         sessionConfig
       })
 
-      await server.start(mongoClient)
+      await server.start(api)
       agent = chai.request.agent(server.getServer())
     })
 

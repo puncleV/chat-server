@@ -1,4 +1,4 @@
-class MessageEntity {
+class Message {
   constructor (db) {
     this.db = db
   }
@@ -31,4 +31,4 @@ class MessageEntity {
   }
 }
 
-module.exports = MessageEntity
+module.exports = Message

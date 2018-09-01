@@ -4,7 +4,7 @@ const session = require('koa-session')
 const http = require('http')
 
 const Socket = require('./socket')
-const logger = require('./helpers/logger')
+const logger = require('./logger')
 const loggerMiddleware = require('./middleware/logger')(logger)
 const router = require('./routes/index')
 const testing = process.env.NODE_ENV === 'test'
