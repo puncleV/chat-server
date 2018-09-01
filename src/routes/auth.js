@@ -1,5 +1,6 @@
 const Router = require('koa-router')
 
+const logger = require('../logger')
 const { auth: {usernameMaxLength, baseRoute} } = require('../../config')
 const router = new Router()
 const authRouter = new Router()
@@ -46,6 +47,7 @@ router.post(`/login`, async ctx => {
     await ctx.app.api.get('user').addOrUpdateUser(username)
     ctx.session.username = username
   } catch (e) {
+    logger.error(`login | ${e.message}`)
     return error(ctx, 500, 'server error')
   }
 })
@@ -68,6 +70,7 @@ router.get(`/logout`, async ctx => {
   try {
     await ctx.app.api.get('user').setOnlineByUsername(ctx.session.username, false)
   } catch (e) {
+    logger.error(`logout | ${e.message}`)
     return error(ctx, 500, 'server error')
   }
 

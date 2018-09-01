@@ -2,6 +2,7 @@ const socket = require('socket.io')
 const http = require('http')
 const crypto = require('crypto')
 
+const logger = require('./logger')
 const RoomTypes = require('./enums/room-types')
 const RoomEvents = require('./enums/room-events')
 const MessageEvents = require('./enums/message-events')
@@ -45,21 +46,14 @@ class Socket {
       socket.session = ctx.session
     } catch (err) {
       error = err
-      this.logger.error(err)
+      logger.error(err)
     }
 
     return next(error)
   }
-  /**
-   * set socket's logger
-   * @param {object} logger Winston instance
-   */
-  setLogger (logger) {
-    this.logger = logger
-  }
 
   async onConnection (socket) {
-    this.logger.info(`${socket.session.username} connection`)
+    logger.info(`${socket.session.username} connection`)
 
     await this.sendRooms(socket, socket.session.username)
 
@@ -74,7 +68,7 @@ class Socket {
   }
 
   async onDisconnect (socket, username) {
-    this.logger.info(`${username} disconnected`)
+    logger.info(`${username} disconnected`)
 
     await this.onLeaveRoom(socket, username)
   }
@@ -93,7 +87,7 @@ class Socket {
         socket.emit(RoomEvents.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
     } catch (e) {
-      this.logger.error(`leave room | ${e.message}`)
+      logger.error(`leave room | ${e.message}`)
     }
   }
 
@@ -111,7 +105,7 @@ class Socket {
       typeof name === 'string' && name.length &&
       typeof type === 'number' && type in Object.values(RoomTypes)
     ) {
-      this.logger.info(`${username} creating room ${name}`)
+      logger.info(`${username} creating room ${name}`)
 
       await this.createRoom(socket, username, name, type)
     }
@@ -123,7 +117,7 @@ class Socket {
 
       socket.emit(RoomEvents.SEND, rooms)
     } catch (e) {
-      this.logger.error(`sendRooms ${e.message}`)
+      logger.error(`sendRooms ${e.message}`)
       socket.disconnect()
     }
 
@@ -174,7 +168,7 @@ class Socket {
         socket.emit(RoomEvents.CREATE_ERROR, `Name '${name}' is busy`)
       }
     } catch (e) {
-      this.logger.error('createRoom', e.message)
+      logger.error('createRoom', e.message)
       socket.emit(RoomEvents.CREATE_ERROR, `Can not create room ${name}`)
     }
 
@@ -188,7 +182,7 @@ class Socket {
    * @param {string} hash room's hash
    */
   async onJoin (socket, username, { hash }) {
-    this.logger.info(`${username} is joining room ${hash}`)
+    logger.info(`${username} is joining room ${hash}`)
 
     try {
       const dbRoom = await this.app.api.get('room').findOneByHash(hash)
@@ -210,10 +204,10 @@ class Socket {
           messages
         })
 
-        this.logger.info(`${username} is joined room ${hash}`)
+        logger.info(`${username} is joined room ${hash}`)
       }
     } catch (e) {
-      this.logger.error(`join room ${e.message}`)
+      logger.error(`join room ${e.message}`)
 
       socket.emit(RoomEvents.JOIN_ERROR, `can not join room`)
     }
@@ -259,10 +253,10 @@ class Socket {
 
         await this.sendRooms(socket, username)
 
-        this.logger.info(`${username} added ${hash}`)
+        logger.info(`${username} added ${hash}`)
       }
     } catch (e) {
-      this.logger.error(`add room ${e.message}`)
+      logger.error(`add room ${e.message}`)
 
       socket.emit(RoomEvents.ADD_ERROR, `can not add room`)
     }
@@ -285,12 +279,12 @@ class Socket {
 
         await this.app.api.get('room').update(dbRoom)
 
-        this.logger.info(`${username} removed ${hash}`)
+        logger.info(`${username} removed ${hash}`)
 
         await this.sendRooms(socket, username)
       }
     } catch (e) {
-      this.logger.error(`remove room ${e.message}`)
+      logger.error(`remove room ${e.message}`)
 
       socket.emit(RoomEvents.REMOVE_ERROR, `can not remove room`)
     }
@@ -312,7 +306,7 @@ class Socket {
 
         await this.app.api.get('message').addOne(username, message, datetime, dbRoom._id)
 
-        this.logger.info(`${username} send message`)
+        logger.info(`${username} send message`)
 
         this.emitEventToRoomParticipants(
           socket, MessageEvents.MESSAGE, dbRoom,
@@ -326,7 +320,7 @@ class Socket {
         })
       }
     } catch (e) {
-      this.logger.error(`remove room ${e.message}`)
+      logger.error(`remove room ${e.message}`)
 
       socket.emit(MessageEvents.MESSAGE_ERROR, `can not send message`)
     }

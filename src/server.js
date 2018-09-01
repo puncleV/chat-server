@@ -1,6 +1,7 @@
 const Koa = require('koa')
 const BodyParser = require('koa-bodyparser')
 const session = require('koa-session')
+const cors = require('koa-cors')
 const http = require('http')
 
 const Socket = require('./socket')
@@ -8,7 +9,7 @@ const logger = require('./logger')
 const loggerMiddleware = require('./middleware/logger')(logger)
 const router = require('./routes/index')
 const testing = process.env.NODE_ENV === 'test'
-
+const { cors: corsOptions } = require('../config')
 class Server {
   constructor (config = {}) {
     this.config = {
@@ -27,13 +28,14 @@ class Server {
    * @param {Api} api database api
    * @return {Promise<void>}
    */
-  async start (api) {
+  start (api) {
     const app = new Koa()
     app.keys = this.config.appSecrets
 
     app.api = api
 
     app.use(loggerMiddleware)
+    app.use(cors(corsOptions))
     app.use(session(this.config.session, app))
     app.use(BodyParser())
     app.use(router.routes())
@@ -41,7 +43,6 @@ class Server {
     this.server = http.Server(app.callback())
 
     this.socket = new Socket(this.server, app)
-    this.socket.setLogger(logger)
     app.socket = this.socket
 
     this.server.listen(this.config.server.port, () => {
