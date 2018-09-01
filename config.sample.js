@@ -1,6 +1,6 @@
 module.exports = {
   server: {
-    port: 1734
+    port: process.env.SERVER_PORT || 1734
   },
   baseApiRoute: '/api',
   appSecrets: ['chat.super.secret.no.key'],
@@ -13,9 +13,16 @@ module.exports = {
     rolling: false,
     renew: false
   },
-  usernameMaxLength: 25,
+  auth: {
+    usernameMaxLength: 25,
+    baseRoute: '/auth'
+  },
   mongo: {
-    url: 'mongodb://localhost:27017',
+    url: process.env.MONGO_URL || 'mongodb://localhost:27017',
     db: 'chat'
+  },
+  cors: {
+    origin: process.env.FRONT_URL || 'http://localhost:3000',
+    credentials: true
   }
 }
