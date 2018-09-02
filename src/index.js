@@ -20,7 +20,11 @@ const killMongoConnection = (client) => {
 }
 
 const main = async () => {
-  const client = await MongoClient.connect(mongoConfig.url, {useNewUrlParser: true})
+  const client = await MongoClient.connect(mongoConfig.url, {useNewUrlParser: true}).catch(e => {
+    logger.error(e.message)
+    process.exit(-228)
+  })
+
   const db = await client.db(mongoConfig.db)
   const api = new Api(db)
 
