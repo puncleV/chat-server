@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon ./src/index.js",
-    "start": "PROCESS_ENV=production node ./build/index.js",
+    "start": "node ./build/index.js",
     "clean": "rm -rf build && mkdir build",
     "build-server": "babel -d ./build ./src -s",
     "build": "npm run clean && npm run build-server",
