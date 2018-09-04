@@ -107,7 +107,7 @@ class Socket {
     ) {
       logger.info(`${username} creating room ${name}`)
 
-      await this.createRoom(socket, username, name, type)
+      await this.createRoom(socket, username, { name, type })
     }
   }
 
@@ -159,6 +159,8 @@ class Socket {
 
         await this.app.api.get('room').addOne(room)
 
+        room.usersCount = 0
+
         socket.emit(RoomEvents.CREATE_SUCCESS, room)
 
         if (type === RoomTypes.public) {
@@ -168,7 +170,7 @@ class Socket {
         socket.emit(RoomEvents.CREATE_ERROR, `Name '${name}' is busy`)
       }
     } catch (e) {
-      logger.error('createRoom', e.message)
+      logger.error('createRoom', e)
       socket.emit(RoomEvents.CREATE_ERROR, `Can not create room ${name}`)
     }
 
