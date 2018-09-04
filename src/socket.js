@@ -82,7 +82,7 @@ class Socket {
 
         const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
-        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, room, {roomHash: room, username})
+        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, room, {roomHash: room.hash, username})
 
         socket.emit(RoomEvents.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
