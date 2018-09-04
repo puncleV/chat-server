@@ -73,6 +73,12 @@ class Socket {
     await this.onLeaveRoom(socket, username)
   }
 
+  /**
+   * Leave room handler
+   * @param {Socket} socket
+   * @param {string} username
+   * @returns {Promise<void>}
+   */
   async onLeaveRoom (socket, username) {
     try {
       const user = await this.app.api.get('user').findOneByUsername(username)
@@ -111,6 +117,12 @@ class Socket {
     }
   }
 
+  /**
+   * Sending rooms list, that user can see
+   * @param {Socket} socket
+   * @param {string} username
+   * @returns {Promise<boolean>}
+   */
   async sendRooms (socket, username) {
     try {
       const rooms = await this.app.api.get('room').findRoomListForUsername(username)
@@ -218,6 +230,13 @@ class Socket {
     }
   }
 
+  /**
+   * Sending an event only to users who have access for the room
+   * @param {Socket} socket
+   * @param {string.<MessageEvents|RoomEvents>} event
+   * @param {Room} room
+   * @param {object} message - message to send
+   */
   emitEventToRoomParticipants (socket, event, room, message) {
     if (room.type === RoomTypes.private) {
       Object.values(this.io.clients().connected).forEach(
@@ -267,6 +286,13 @@ class Socket {
     }
   }
 
+  /**
+   * Handle user's deletion of the room
+   * @param {Socket} socket
+   * @param {string} username
+   * @param {string} hash
+   * @returns {Promise<void>}
+   */
   async onRemoveRoom (socket, username, { hash }) {
     try {
       const dbRoom = await this.app.api.get('room').findOneByHash(hash)
@@ -295,6 +321,14 @@ class Socket {
     }
   }
 
+  /**
+   * Om new message from user handler
+   * @param {Socket} socket
+   * @param {string} username
+   * @param {string} roomHash
+   * @param {string} message
+   * @returns {Promise<void>}
+   */
   async onMessage (socket, username, { roomHash, message }) {
     if (typeof message !== 'string') {
       socket.emit(MessageEvents.MESSAGE_ERROR, `wrong message format`)

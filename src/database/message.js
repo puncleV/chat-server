@@ -3,6 +3,12 @@ class Message {
     this.db = db
   }
 
+  /**
+   * Finding messages for room
+   * @param {string} roomId
+   * @param {number} limit
+   * @returns {*}
+   */
   findByRoomId (roomId, limit) {
     const options = {}
 
