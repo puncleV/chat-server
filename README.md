@@ -11,4 +11,4 @@ This is a server part for chat application.
 
 1. sudo dockebuild -t chat/server .
 2. sudo docker run --link mongo:mongo -it --rm --name server chat/server
-3. 
+3. Now you can use chat-front from https://bitbucket.org/punkkk/chat-front
