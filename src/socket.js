@@ -82,7 +82,7 @@ class Socket {
 
         const room = await this.app.api.get('room').findOneByHash(user.currentRoom)
 
-        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, {roomHash: room, username})
+        this.emitEventToRoomParticipants(socket, RoomEvents.USER_LEAVE, room, {roomHash: room, username})
 
         socket.emit(RoomEvents.USER_LEAVE, { username, roomHash: user.currentRoom })
       }
@@ -219,7 +219,7 @@ class Socket {
     if (room.type === RoomTypes.private) {
       Object.values(this.io.clients().connected).forEach(
         clientSocket => {
-          if (clientSocket.session.username in room.accessGranted) {
+          if (room.accessGranted.includes(clientSocket.session.username)) {
             clientSocket.emit(event, message)
           }
         }
