@@ -193,6 +193,9 @@ class Socket {
         socket.emit(RoomEvents.JOIN_ERROR, `room does not exist`)
       } else {
         const users = await this.app.api.get('user').findAllByCurrentRoom(hash)
+
+        users.push(username)
+
         const messages = await this.app.api.get('message').findByRoomId(dbRoom._id)
 
         await this.app.api.get('user').setUserRoom(username, hash)

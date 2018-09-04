@@ -33,9 +33,19 @@ class User {
    * @return {Promise.<Array.<User>>}
    */
   findAllByCurrentRoom (currentRoom) {
-    return this.db.collection('users').find({
-      currentRoom
-    }).toArray()
+    return this.db.collection('users').aggregate([
+      {
+        $match: {
+          currentRoom
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          username: 1
+        }
+      }
+    ]).map(user => user.username).toArray()
   }
 
   /**
