@@ -10,7 +10,10 @@ class Message {
       options.limit = limit
     }
 
-    return this.db.collection('messages').find({ roomId }, options).toArray()
+    return this.db.collection('messages').aggregate([
+      { $match: { roomId } },
+      { $project: { _id: 0, from: 1, text: 1, datetime: 1} }
+    ], options).toArray()
   }
 
   /**
